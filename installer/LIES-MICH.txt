@@ -1,0 +1,94 @@
+DEEP ROCK GALACTIC: SURVIVOR - LOCAL CO-OP  (privater Test)
+===========================================================
+(English version: README.txt)
+
+Was das ist
+-----------
+Zwei Zwerge in einem Spiel (ein Spielprozess, kein Netzwerk): Zwerg 1 und Zwerg 2 mit eigenem Controller, gemeinsame Kamera,
+gemeinsame XP, getrennte Geldbeutel, Level-ups und Shop nacheinander. Im Hauptmenue erscheint "LOCAL CO-OP".
+
+Installieren
+------------
+1. Spiel beenden.
+2. Das ZIP KOMPLETT entpacken (an einen beliebigen Ort, den Ordner payload mitnehmen) und dort Install-LocalCoop.bat
+   doppelklicken (kein Admin noetig). Das Skript
+   - sucht den Steam-Spielordner selbst (sonst fragt es nach dem Pfad),
+   - sichert Ihren Spielstand nach  Dokumente\DRG-Survivor-Saves-Backup-<Zeit>,
+   - installiert BepInEx nur, wenn es im Spielordner noch fehlt,
+   - schaltet die BepInEx-Konsole aus (ein zweites Spielfenster sperrt bei Remote Play Together die Eingabe des Gastes),
+   - schiebt die alte Netzwerk-Mod (DrgSurvivorCoopProbe.dll, LiteNetLib.dll) nach BepInEx\plugins-disabled,
+   - kopiert LocalCoop.dll nach BepInEx\plugins,
+   - schaltet BepInEx fuer normale Starts AUS (doorstop_config.ini: enabled = false),
+   - legt Start-Coop.bat in den Spielordner und eine Verknuepfung auf den Desktop,
+   - richtet Remote Play Together ein, wenn Spacewar installiert ist (siehe unten); sonst bietet es an, die Steam-Seite von Spacewar zu oeffnen.
+   Alles steht in localcoop-install.log im Spielordner.
+3. Der ERSTE Co-op-Start dauert 1 bis 3 Minuten laenger (BepInEx baut seine Dateien); danach startet es normal schnell.
+
+Starten
+-------
+- Einzelspieler:  wie immer ueber Steam ("Spielen"). Der Mod ist dabei ausgeschaltet, das Spiel ist das unveraenderte Spiel.
+- Co-op am selben PC: Desktop-Verknuepfung "DRG Survivor Co-op" (= Start-Coop.bat im Spielordner). Sie startet das Spiel ueber Steam mit
+                  den Startoptionen  --doorstop-enabled true -lccoop.  Steam muss laufen (wird sonst gestartet).
+- Co-op online mit einem Freund (Steam Remote Play Together): in Steam "Spacewar" starten (Verknuepfung "DRG Survivor Co-op (Remote Play)"),
+                  NICHT das Spiel selbst. DRG Survivor oeffnet sich mit LOCAL CO-OP. Dann Shift+Tab -> Freunde -> Remote Play Together.
+- Pruefen, ob der Mod an war: Spielordner\lc.log existiert nur nach einem Co-op-Start; die erste Zeile nennt die Startoptionen.
+
+Steam Remote Play Together (Online mit einem Freund) - ueber den Spacewar-Trick
+-------------------------------------------------------------------------------
+Die Store-Seite des Spiels listet "Remote Play Together" nicht, deshalb bietet Steam die Einladung fuer das Spiel selbst nicht an. Spacewar
+(Valves Beispiel-App, steam://install/480, ca. 50 MB, kostenlos) bietet sie. Der Trick: Spacewars exe wird durch einen 5-KB-Launcher ersetzt, der
+DRG Survivor mit den Co-op-Optionen startet (--doorstop-enabled true -lccoop -lcremote; Spieler 2 ist das zuletzt verbundene Gamepad).
+Der Installer macht das, wenn Spacewar installiert ist. Sonst: Spacewar installieren, Spiel beenden, Enable-RemotePlayTrick.bat im Spielordner starten.
+Zurueck: Enable-RemotePlayTrick-Undo.bat (Spacewars eigene exe bleibt als <Name>.lcbackup erhalten; Steams "Integritaet pruefen" stellt sie auch wieder her).
+
+Drei Dinge muessen stimmen, sonst kann der Gast nicht spielen:
+1. BepInEx-Konsole AUS: in BepInEx\config\BepInEx.cfg steht unter [Logging.Console] "Enabled = false" (der Installer setzt das). Mit der Konsole, einem zweiten
+   Fenster des Spiels, zeigt Steam dem Gast "Die Eingabe ist voruebergehend deaktiviert, waehrend der Host beschaeftigt ist".
+2. Im Steam-Overlay (Shift+Tab) die Controller-Einstellungen oeffnen und das Profil auf "Gamepad" stellen. Sonst sieht das Spiel keinen Controller.
+3. Spacewar starten, nicht das Spiel, und den Freund erst einladen, wenn das Spiel im Hauptmenue ist.
+Aktualisiert oder prueft Steam Spacewar, kann es seine eigene exe zurueckspielen; dann Enable-RemotePlayTrick.bat noch einmal starten.
+Stand: Die Einladung funktioniert, ein kompletter Lauf ueber 5 Stages wurde so gespielt (Test des Besitzers). Ob der Gast-Controller jeden Bildschirm
+(Lobby, Level-up, Shop, Endbildschirm) bedienen kann, ist nicht systematisch getestet.
+
+Spielen
+-------
+- Hauptmenue -> LOCAL CO-OP: Lobby (zwei Spieler, Eliminierung oder Begleitauftrag), Sektor/Tor, Biom, Gefahrenstufe, dann waehlen beide
+  gleichzeitig ihre Klasse und Subklasse (links Spieler 1, rechts Spieler 2), Spieler 2 drueckt READY, der Host drueckt START RUN.
+- Level-up und Shop: erst Spieler 1, dann Spieler 2. Oben rechts steht, wer dran ist; der Controller des anderen ist dann gesperrt.
+
+Entfernen
+---------
+Uninstall-LocalCoop.bat im Spielordner doppelklicken: entfernt Plugin, Start-Coop.bat, Verknuepfungen, den Remote-Play-Trick (Spacewars exe wird
+zurueckgestellt), das Install-Log und die Co-op-Logs, stellt doorstop_config.ini, die BepInEx-Konsoleneinstellung und die alte Netzwerk-Mod wieder her
+und fragt, ob BepInEx auch entfernt werden soll (Standard ja, wenn der Installer es mitgebracht hat; war es vorher da, steht Nein vorn und die Zahl der anderen Plugin-Dateien, die dabei mit geloescht wuerden). Danach loescht sich der Uninstaller selbst, es bleibt nichts zurueck.
+Spielstaende werden nie angefasst.
+
+Bekannte Luecken
+----------------
+Siehe TEST-LISTE.txt (ganz unten). Co-op-Laeufe zaehlen in Ihr normales Profil (daher die Sicherung bei der Installation).
+Probleme: lc.log aus dem Spielordner mitschicken, dazu 2 bis 3 Saetze, was lief und was nicht.
+
+Einstellungen
+-------------
+localcoop-settings.txt in <Spielordner>\BepInEx\config (wird beim ersten Co-op-Start angelegt, eine aeltere Datei aus dem Spielordner wird dorthin verschoben, fehlende Zeilen werden ergaenzt; # beginnt einen Kommentar). Aktuell die Wiederbelebungs-Gesundheit und ein Experiment:
+  ReviveMode = percent | flat      (Standard percent)
+  ReviveHealthPercent = 20         (Prozent der maximalen Lebenspunkte)
+  ReviveHealthFlat = 20            (feste Lebenspunkte)
+  ReviveSeconds = 3                (Sekunden, die der andere Zwerg innerhalb von 3 m stehen muss; 0,5 bis 60)
+  SecondDrone = off | on           (Experiment: Spieler 2 bekommt eine eigene Begleitdrohne; Standard aus, beide teilen sich eine)
+  Debug = off | on                 (zusaetzliche Trace-Zeilen in lc.log fuer Fehlerberichte; Standard aus)
+  DebugGodMode = off | on          (nur bei Debug = on: keiner der Zwerge kann sterben; Standard aus)
+Aenderungen gelten beim naechsten Spielstart. Ungueltige Werte werden ignoriert (Standard bleibt) und stehen in lc.log. Der Uninstaller entfernt die Datei.
+
+Koop-Regeln (was beide Zwerge teilen)
+-------------------------------------
+- Wiederbelebung (Knopf REVIVE auf der letzten Seite vor der Mission, Standard an): Ein gestorbener Zwerg liegt am Boden, der Einsatz endet erst, wenn beide
+  am Boden sind. Der andere steht 3 s lang (ReviveSeconds) innerhalb von 3 m, dann steht der Gefallene mit der Gesundheit aus der Settings-Datei wieder auf.
+- Artefakte: Jedes Artefakt, das ein Zwerg bekommt, bekommt der andere auch (z. B. Max-HP; Roter Zucker erhoeht bei jedem Aufheben die Max-HP beider).
+- Allgemeine Stat-Upgrades (Level-up-Karten wie Krit-Chance oder Lauftempo) gelten fuer beide und sind mit KOOP-BONUS markiert. Waffen und
+  Waffen-Upgrades bleiben bei dem, der sie gewaehlt hat.
+- Beute-Kiste (z. B. nach dem ersten Boss): Der Host oeffnet sie, danach bekommt Spieler 2 eine eigene Runde.
+- Pausemenue: Es zeigt den Zwerg, dessen Pause-Taste es geoeffnet hat (Spieler 2: Start-Taste), mit "SPIELER n" in der Spielerfarbe ueber der Ueberschrift; nur dieser Controller bedient es; in Spieler 2s Level-up-Runde zeigt das Details-Fenster Spieler 2s Waffen.
+- Level-ups: sind mehrere Stufen faellig, wechseln sie sich ab (Spieler 1, Spieler 2, Spieler 1, ...). Die Ueberschrift nennt, wer dran ist ("SPIELER 1 ..." orange, "SPIELER 2 ..." blau), und der Controller dieses Spielers vibriert kurz. Allgemeine Upgrades zeigen die Pfeile in beiden Ausruestungsleisten.
+- Landekapsel: am Ende einer Stage fliegt die Kapsel erst ab, wenn beide Zwerge drin sind (ein Zwerg am Boden zaehlt nicht); wer drin steht, nimmt keinen Schaden. Bei der Ankunft fahren beide in der Kapsel herunter und gehen zusammen die Rampe hinab.
+- Minimap: ein blauer Punkt fuer Spieler 2 neben dem roten des Hosts.

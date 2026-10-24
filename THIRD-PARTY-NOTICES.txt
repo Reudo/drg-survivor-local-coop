@@ -1,0 +1,10 @@
+Third-party software
+
+The release ZIP contains an unchanged copy of BepInEx 6.0.0-be.789 (Unity IL2CPP, win-x64) as payload\BepInEx.zip. It is used to load the plugin and is
+not part of this project's MIT license.
+  BepInEx: https://github.com/BepInEx/BepInEx  (LGPL-2.1, license text and source code are in that repository)
+  It bundles HarmonyX (MIT, https://github.com/BepInEx/HarmonyX) and other components under their own licenses.
+
+The plugin is built against assemblies that BepInEx generates from the player's own copy of the game. No game files are distributed.
+
+Deep Rock Galactic: Survivor is a game by Funday Games / Coffee Stain. This project is not affiliated with or endorsed by them.

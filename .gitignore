@@ -1,0 +1,17 @@
+bin/
+obj/
+*.zip
+*.exe
+*.dll
+*.log
+*.out
+lc-shots/
+
+# local paths of one PC, work area
+tools/lc-local.ps1
+work/
+
+# owner's private working notes
+GOAL.md
+HANDTEST-TODO.md
+HANDTEST.html
