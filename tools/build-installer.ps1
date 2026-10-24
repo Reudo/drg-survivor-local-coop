@@ -3,7 +3,7 @@
 
     local\release\DrgSurvivorLocalCoop-1.0.0-Installer.zip   (and the unpacked folder next to it)
 
-  Contents: Install-LocalCoop.bat/.ps1, payload\ (LocalCoop.dll, the launchers, the uninstaller, BepInEx.zip for PCs that have none),
+  Contents: Install-LocalCoop.bat/.ps1, payload\ (LocalCoop.dll, the launchers, the uninstaller, bepinex-base (unpacked BepInEx) for PCs that have none),
   README.txt, LIES-MICH.txt (German), BUILDINFO.txt. No game files.
 
   Usage:  .\build-installer.ps1            # builds the plugin first
@@ -42,7 +42,10 @@ Copy-Item (Join-Path $root 'LICENSE') $stageRoot
 Copy-Item (Join-Path $root 'THIRD-PARTY-NOTICES.txt') $stageRoot
 Get-ChildItem (Join-Path $inst 'payload') -File | ForEach-Object { Copy-Item $_.FullName (Join-Path $stageRoot 'payload') }
 Copy-Item $dll (Join-Path $stageRoot 'payload\LocalCoop.dll')
-Copy-Item $bep.FullName (Join-Path $stageRoot 'payload\BepInEx.zip')
+# BepInEx goes in unpacked (payload\bepinex-base\): a ZIP inside the ZIP is flagged by mod sites such as Nexus Mods
+Expand-Archive -Path $bep.FullName -DestinationPath (Join-Path $stageRoot 'payload\bepinex-base') -Force
+$nested = @(Get-ChildItem $stageRoot -Recurse -File | Where-Object { $_.Extension -in '.zip', '.7z', '.rar' })
+if ($nested.Count -gt 0) { throw ('the package would contain an archive inside the archive: ' + (($nested | ForEach-Object { $_.FullName.Substring($stageRoot.Length + 1) }) -join ', ')) }
 $h = (Get-FileHash $dll -Algorithm SHA256).Hash
 Set-Content -Path (Join-Path $stageRoot 'BUILDINFO.txt') -Encoding UTF8 -Value @(
   'Deep Rock Galactic: Survivor - Local Co-op 1.0.0',

@@ -4,7 +4,7 @@
   What it does (and nothing else):
    1. finds the Steam game folder (or uses -GameDir), refuses to run while the game is open
    2. backs up the save profile (Documents\DRG-Survivor-Saves-Backup-<time>)
-   3. installs BepInEx 6 (be.789, IL2CPP) from payload\BepInEx.zip only if the game folder has none, with the Unity-6 setting that works,
+   3. installs BepInEx 6 (be.789, IL2CPP) from payload\bepinex-base only if the game folder has none, with the Unity-6 setting that works,
       and switches the BepInEx console OFF (a second game window makes Steam Remote Play Together block the guest's input)
    4. moves the old network mod (DrgSurvivorCoopProbe.dll, LiteNetLib.dll) to BepInEx\plugins-disabled
    5. copies LocalCoop.dll to BepInEx\plugins
@@ -94,10 +94,10 @@ $core = Join-Path $GameDir 'BepInEx\core\BepInEx.Unity.IL2CPP.dll'
 $hasBep = (Test-Path (Join-Path $GameDir 'winhttp.dll')) -and (Test-Path $core)
 if ($hasBep) { Log 'BepInEx is already in the game folder: kept.' }
 else {
-  $zip = Join-Path $payload 'BepInEx.zip'
-  if (-not (Test-Path $zip)) { throw 'BepInEx is missing in the game folder and payload\BepInEx.zip is not included.' }
+  $base = Join-Path $payload 'bepinex-base'
+  if (-not (Test-Path (Join-Path $base 'winhttp.dll'))) { throw 'BepInEx is missing in the game folder and payload\bepinex-base is not included (extract the whole ZIP, keep the payload folder).' }
   Log 'Installing BepInEx 6 (be.789) ...'
-  Expand-Archive -Path $zip -DestinationPath $GameDir -Force
+  Copy-Item -Path (Join-Path $base '*') -Destination $GameDir -Recurse -Force
   $cfgDir = Join-Path $GameDir 'BepInEx\config'
   New-Item -ItemType Directory $cfgDir -Force | Out-Null
   $cfg = Join-Path $cfgDir 'BepInEx.cfg'
