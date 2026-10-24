@@ -64,7 +64,9 @@ if (-not $GameDir -or -not (Test-Path (Join-Path $GameDir 'DRG Survivor.exe'))) 
 $GameDir = (Resolve-Path $GameDir).Path
 Say ('Game folder: ' + $GameDir)
 if (Get-Process 'DRG Survivor' -ErrorAction SilentlyContinue) { throw 'The game is running. Close it and start the installer again.' }
-foreach ($f in 'LocalCoop.dll', 'Uninstall-LocalCoop.ps1', 'RpLauncher.exe', 'Enable-RemotePlayTrick.ps1') {
+# The Nexus package has no RpLauncher.exe / Remote Play trick and no BepInEx; the full package (GitHub release) has both.
+$hasRp = (Test-Path (Join-Path $payload 'RpLauncher.exe')) -and (Test-Path (Join-Path $payload 'Enable-RemotePlayTrick.ps1'))
+foreach ($f in 'LocalCoop.dll', 'Uninstall-LocalCoop.ps1') {
   if (-not (Test-Path (Join-Path $payload $f))) {
     $have = '(folder payload is missing)'
     if (Test-Path $payload) { $have = (@(Get-ChildItem $payload | Where-Object { -not $_.PSIsContainer } | ForEach-Object { $_.Name }) -join ', ') }
@@ -95,7 +97,12 @@ $hasBep = (Test-Path (Join-Path $GameDir 'winhttp.dll')) -and (Test-Path $core)
 if ($hasBep) { Log 'BepInEx is already in the game folder: kept.' }
 else {
   $base = Join-Path $payload 'bepinex-base'
-  if (-not (Test-Path (Join-Path $base 'winhttp.dll'))) { throw 'BepInEx is missing in the game folder and payload\bepinex-base is not included (extract the whole ZIP, keep the payload folder).' }
+  if (-not (Test-Path (Join-Path $base 'winhttp.dll'))) {
+    throw ("BepInEx is not installed in the game folder, and this package does not include it.`r`n" +
+      "Install BepInEx 6.0.0-be.789 (Unity IL2CPP, win-x64) first: https://builds.bepinex.dev/projects/bepinex_be`r`n" +
+      "Unpack it into the game folder, start the game once, close it, then run this installer again.`r`n" +
+      "(The GitHub release 'DrgSurvivorLocalCoop-Installer' includes BepInEx and does it for you.)")
+  }
   Log 'Installing BepInEx 6 (be.789) ...'
   Copy-Item -Path (Join-Path $base '*') -Destination $GameDir -Recurse -Force
   $cfgDir = Join-Path $GameDir 'BepInEx\config'
@@ -187,7 +194,9 @@ $spw = ''
 if ($SpacewarDir) { if (Test-Path $SpacewarDir) { $spw = (Resolve-Path $SpacewarDir).Path } }
 else { $spw = Find-App '480' '' }
 $remoteOn = $false
-if ($spw) {
+if (-not $hasRp) {
+  Log 'Remote Play trick is not part of this package: skipped.'
+} elseif ($spw) {
   try {
     & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $GameDir 'Enable-RemotePlayTrick.ps1') -DonorDir $spw -GameDir $GameDir | Out-Null
     if ($LASTEXITCODE -eq 0) { $state.spacewarDir = $spw; $remoteOn = $true; Log ('Remote Play Together enabled through Spacewar: ' + $spw) }
@@ -217,7 +226,7 @@ Say '  * Co-op (same PC, two controllers): desktop shortcut "DRG Survivor Co-op"
 if ($remoteOn) {
   Say '  * Co-op with a friend online:       start "Spacewar" in Steam (shortcut "DRG Survivor Co-op (Remote Play)"), then Shift+Tab -> Friends -> Remote Play Together'
   Say '    In the Steam overlay (Shift+Tab) open the controller settings and change the profile to "Gamepad", or the game sees no controller.'
-} else {
+} elseif ($hasRp) {
   Say '  * Online with a friend:              install Spacewar (steam://install/480), then run Enable-RemotePlayTrick.bat in the game folder. See README.txt.'
 }
 Say '  * Single player:                    start the game normally from Steam; the mod is off then'
