@@ -617,9 +617,9 @@ namespace LocalCoop
                         {
                             string picks = string.Join(",", LevelRounds.Picks.ToArray());
                             // every level is answered by the host first and by P2 afterwards: two of each, and P2 never answers before the host has answered as often
-                            bool order = LevelRounds.Picks.Count == 4; int a1 = 0, a2 = 0;
-                            foreach (var pk in LevelRounds.Picks) { if (pk.StartsWith("P1:")) a1++; else if (pk.StartsWith("P2:")) a2++; if (a2 > a1) order = false; }
-                            order = order && a1 == 2 && a2 == 2;
+                            // save slot 3 (tests since 2026-10-26) earns faster: a third level may already have started (P1's pick of it is the fifth); the first four still decide
+                            bool order = LevelRounds.Picks.Count >= 4; int a1 = 0, a2 = 0, k = 0;
+                            foreach (var pk in LevelRounds.Picks) { if (pk.StartsWith("P1:")) a1++; else if (pk.StartsWith("P2:")) a2++; if (a2 > a1) order = false; if (++k == 4 && !(a1 == 2 && a2 == 2)) order = false; }
                             string seq = ""; foreach (var pk in LevelRounds.Picks) { string w = pk.Substring(0, 2) + ","; if (!seq.EndsWith(w)) seq += w; }      // the test clicker may press a card twice: collapse repeats
                             // with several levels queued at once the rounds must alternate: P1, P2, P1, P2 (twin -lcnoalternate gives P1, P1, P2, P2)
                             if (Lc.Has("-lcxpburst")) order = seq == "P1,P2,P1,P2,";
@@ -1043,7 +1043,7 @@ namespace LocalCoop
                     default:
                         if (Lc.InRunAt < 0f && Lc.Has("-lcendtest") && !EndScreen2.TestDone) return; if (Lc.InRunAt < 0f) { if (Lc.EverInRun) { if (Lc.Has("-lcrevivetest") && (Revive.TestDone || Revive.BothDown > 0)) Finish(Revive.Passed && Revive.BothDown > 0, "revive test " + Revive.Summary + ", game over after both were down: " + (Revive.BothDown > 0) + " (the test ends the run itself)"); else Finish(false, "the run ended before the check"); } else if (now > _sAt + 60f) Finish(false, "the run did not start"); return; }
                         if (_inRunSince < 0f) _inRunSince = now;
-                        if ((Lc.Has("-lcrevivetest") && !Revive.TestDone) || (Lc.Has("-lcmeleetest") && !Melee.TestDone) || (Lc.Has("-lcturrettest") && !TurretTest.TestDone) || (Lc.Has("-lccratetest") && !Bonus.CrateDone) || (Lc.Has("-lcslotarrows") && !Bonus.ArrowDone) || (Lc.Has("-lcarrow2test") && !Arrow2.TestDone) || (Lc.Has("-lcdrilltest") && !DrillSound.TestDone) || (Lc.Has("-lcendtest") && !EndScreen2.TestDone) || (Lc.Has("-lcprogresstest") && !RunProgress.TestDone) || (Lc.Has("-lcsupplytest") && !LevelBanner.TestDone) || (Lc.Has("-lcbuff2test") && !Buffs2.TestDone) || (Lc.Has("-lcminimap2test") && !MiniMap2.TestDone) || (Lc.Has("-lcpausetest") && !PauseView.TestDone) || (Lc.Has("-lcpodtest") && !Pod.TestDone) || (Lc.Has("-lchotrocktest") && !Zones.HotDone) || (Lc.Has("-lcbobbytest") && !Zones.BobbyDone) || (Lc.Has("-lcplanttest") && !Zones.PlantDone)) return;      // these tests need a quiet run, the start check waits for them
+                        if ((Lc.Has("-lcrevivetest") && !Revive.TestDone) || (Lc.Has("-lcmeleetest") && !Melee.TestDone) || (Lc.Has("-lcturrettest") && !TurretTest.TestDone) || (Lc.Has("-lcsoundtest") && !SoundTest.TestDone) || (Lc.Has("-lccratetest") && !Bonus.CrateDone) || (Lc.Has("-lcslotarrows") && !Bonus.ArrowDone) || (Lc.Has("-lcarrow2test") && !Arrow2.TestDone) || (Lc.Has("-lcdrilltest") && !DrillSound.TestDone) || (Lc.Has("-lcendtest") && !EndScreen2.TestDone) || (Lc.Has("-lcprogresstest") && !RunProgress.TestDone) || (Lc.Has("-lcsupplytest") && !LevelBanner.TestDone) || (Lc.Has("-lcbuff2test") && !Buffs2.TestDone) || (Lc.Has("-lcminimap2test") && !MiniMap2.TestDone) || (Lc.Has("-lcpausetest") && !PauseView.TestDone) || (Lc.Has("-lcpodtest") && !Pod.TestDone) || (Lc.Has("-lchotrocktest") && !Zones.HotDone) || (Lc.Has("-lcbobbytest") && !Zones.BobbyDone) || (Lc.Has("-lcplanttest") && !Zones.PlantDone)) return;      // these tests need a quiet run, the start check waits for them
                         if (now < _inRunSince + 22f) return;
                         {
                             var rsm = CoopStart.Rsm();

@@ -179,7 +179,9 @@ namespace LocalCoop
                             int hits = Revive.HitsWhileDown - _hits0, far = FarHits - _far0;
                             Lc.Line("melee: CHECK " + (far == 0 ? "OK  " : "FAIL") + " player 1 takes no hit while no enemy stands within 3 m of it (player 2 lies down) | hits with no enemy near=" + far + " with one near=" + (NearHits - _nearHits0) + " all hits=" + hits + " hp " + _hp0 + " -> " + h.currentHp);
                             _ok1 = ok && far == 0;
-                            _hits0 = Revive.HitsWhileDown; _near0 = Near; _far0 = FarHits; _nearHits0 = NearHits; _until = now + 10f; _step = 3; _at = now; break;
+                            _hits0 = Revive.HitsWhileDown; _near0 = Near; _far0 = FarHits; _nearHits0 = NearHits; _until = now + 15f; _step = 3; _at = now;
+                            try { h.ToggleWeapons(false); h.weaponsActive = false; } catch { }          // flaky run: player 1 shot the enemies before they reached it (0 hits in 10 s)
+                            break;
                         }
                         _at = now + 0.5f; break;
                     case 3:

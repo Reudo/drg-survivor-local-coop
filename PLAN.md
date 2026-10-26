@@ -433,3 +433,9 @@ Hand-test wishes of the owner, each built, run and twinned; the owner has not se
 - Hand test (end screen, 12:36 run): player 1's turret level 20 with 57,983 damage at 352/s (165 s active), player 2's level 4 with 834,466 at 1,659/s (503 s active).
 - Code read: each SpawnWeaponHandler has its own turret pool; the turret's gun is a handler with the spawn handler as external owner, and `TrackDamage` (RVA 0x8A8C70) adds to the owner. No path found that books one dwarf's turret on the other.
 - `-lcturrettest`: both dwarves get the LMG turret, 30 m apart, 40 s: active P1 34.4 s / P2 34.4 s, damage P1 5,060 / P2 5,620; both turrets went from level 1 to 2 at the same moment (level-up rounds of both dwarves, not checked further). Short window only: the 12-minute case is not reproduced and stays unexplained.
+
+## Sounds in the shop / before the end screen (2026-10-27, diagnosis only)
+- Hand test: a weapon sound (or something else) kept playing in the shop and while clicking through the unlocks before the end screen.
+- `-lcsoundtest` opened the shop with `UIShopScreen.Show` mid-run like the wallet test: the game kept running (time scale 1, both dwarves' weapons unpaused, the flamethrower loops of both kept playing), so it does not show the real between-stages shop. Not reproduced.
+- Added a log-only watch (`SoundTest.Watch`, always on): when the game stops or another form comes up during a co-op run, lc.log gets the looping sounds still playing and both dwarves' weapon pause state and pod flag. Seen in the level-up test: only music and ambience loop while the level-up form is open. The owner's next lc.log after the problem should name the sound.
+- Test fixes: the level-up order check allows a third level that has already started (slot 3 earns faster; fifth pick P1); the melee test's walk-up phase switches player 1's weapons off (one run: player 1 shot every enemy before it arrived) and lasts 15 s. Re-run: level-up PASS / twin FAIL, melee 2x PASS.

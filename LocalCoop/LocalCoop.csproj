@@ -124,6 +124,10 @@
       <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.AIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>$(GameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
