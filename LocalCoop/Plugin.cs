@@ -93,7 +93,6 @@ namespace LocalCoop
                 Perf.Run("Tags", Tags.Tick);
                 Perf.Run("Haptics", Haptics.Tick);
                 Perf.Run("VirtualPad", VirtualPad.Tick);
-                Perf.Run("RpInvite", RpInvite.Tick);
                 Lc.TickQuit();
                 Perf.Report();
             }

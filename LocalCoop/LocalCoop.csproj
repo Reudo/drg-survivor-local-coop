@@ -124,10 +124,6 @@
       <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.AIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="com.rlabrecque.steamworks.net">
-      <HintPath>$(GameDir)\BepInEx\interop\com.rlabrecque.steamworks.net.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>$(GameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
