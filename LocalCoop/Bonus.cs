@@ -722,7 +722,159 @@ namespace LocalCoop
             catch (Exception e) { Lc.LineOnce("pickupwatch threw " + e.GetType().Name + ": " + e.Message); }
         }
 
-        private static bool _probed;
+        private static bool _probed, _swept;
+
+        private static double[] Stats(Player p)
+        {
+            var l = new System.Collections.Generic.List<double>();
+            void Add(Func<double> f) { try { l.Add(f()); } catch { l.Add(double.NaN); } }
+            Add(() => p._maxHp_k__BackingField.Value); Add(() => p._moveSpeed_k__BackingField.Value); Add(() => p._lifeRegen_k__BackingField.Value);
+            Add(() => p._dodge_k__BackingField.Value); Add(() => p._armor_k__BackingField.Value); Add(() => p._miningSpeed_k__BackingField.Value);
+            Add(() => p._xpGain_k__BackingField.Value); Add(() => p._luck_k__BackingField.Value); Add(() => p._pickupRadius_k__BackingField.Value);
+            Add(() => p._critChance_k__BackingField.Value); Add(() => p._critDamage_k__BackingField.Value);
+            return l.ToArray();
+        }
+        private static int Changed(double[] a, double[] b) { int n = 0; for (int i = 0; i < a.Length; i++) if (!double.IsNaN(a[i]) && !double.IsNaN(b[i]) && Math.Abs(a[i] - b[i]) > 1e-6) n++; return n; }
+        private static int Handlers(Player p) { try { return p.GetComponentsInChildren<AbstractArtifactTrigger>(true).Length; } catch { return -1; } }
+
+        private static bool _trigDone;
+        private static readonly string[] StatNames = { "maxHp", "moveSpeed", "lifeRegen", "dodge", "armor", "miningSpeed", "xpGain", "luck", "pickupRadius", "critChance", "critDamage" };
+        private static string DeltaText(double[] a, double[] b, long hp0, long hp1)
+        {
+            var s = ""; for (int i = 0; i < a.Length; i++) if (!double.IsNaN(a[i]) && Math.Abs(a[i] - b[i]) > 1e-6) s += StatNames[i] + " " + a[i].ToString("F2") + "->" + b[i].ToString("F2") + " ";
+            if (hp0 != hp1) s += "hp " + hp0 + "->" + hp1 + " ";
+            return s.Length > 0 ? s.Trim() : "no change";
+        }
+
+        /// <summary>One trigger artifact: hand its handlers an event that names the host, then one that names the clone, and look at who reacts. A handler that filters on the
+        /// dwarf reacts only to its own. Both react = the filter is missing (the other dwarf's event also pays for this one); only the host's = the clone never gets it.
+        /// The event goes straight into the handler's method (not through the game's static event), so nothing else in the run reacts.</summary>
+        private static void TrigMatrix<THandler>(Player host, Player clone, string label, string dataName, Func<Player, Action<THandler>> make, bool argsNameDwarf, Action<Player> prepare = null) where THandler : UnityEngine.Component
+        {
+            try
+            {
+                ArtifactSkillData data = null;
+                foreach (var a in Resources.FindObjectsOfTypeAll<ArtifactSkillData>()) if (a != null && a.name == dataName) { data = a; break; }
+                if (data == null) { Check("trig " + label + ": data exists", false, dataName + " not loaded"); return; }
+                host.EquipArtifact(data, false);
+                var hs = UnityEngine.Object.FindObjectsOfType<THandler>();
+                var own = new System.Collections.Generic.Dictionary<THandler, Player>();
+                foreach (var hd in hs) own[hd] = hd.transform.IsChildOf(clone.transform) ? clone : hd.transform.IsChildOf(host.transform) ? host : null;
+                int nh = 0, nc = 0; foreach (var kv in own) { if (kv.Value == host) nh++; else if (kv.Value == clone) nc++; }
+                Check("trig " + label + ": one handler on each dwarf", nh == 1 && nc == 1, "handlers host/clone=" + nh + "/" + nc);
+                if (nh != 1 || nc != 1) return;
+                foreach (var who in new[] { host, clone })
+                {
+                    var react = new bool[2]; var lines = "";
+                    int k = 0;
+                    foreach (var kv in own)
+                    {
+                        var o = kv.Value; if (o == null) continue;
+                        prepare?.Invoke(o);
+                        var s0 = Stats(o); long h0 = 0; try { h0 = o.currentHp; } catch { }
+                        try { make(who)(kv.Key); } catch (Exception e) { lines += " [threw " + e.GetType().Name + "]"; }
+                        var s1 = Stats(o); long h1 = 0; try { h1 = o.currentHp; } catch { }
+                        bool ch = Changed(s0, s1) > 0 || h0 != h1;
+                        lines += " | handler of " + Who(o) + ": " + DeltaText(s0, s1, h0, h1);
+                        if (o.Pointer == host.Pointer) react[0] = ch; else react[1] = ch;
+                        k++;
+                    }
+                    bool wantHost = who.Pointer == host.Pointer, wantClone = !wantHost;
+                    Lc.Line("bonus: trig " + label + " event names " + Who(who) + ":" + lines);
+                    if (argsNameDwarf) Check("trig " + label + ": an event of " + Who(who) + " is for " + Who(who) + "'s handler only", react[0] == wantHost && react[1] == wantClone, "host reacts=" + react[0] + " clone reacts=" + react[1]);
+                    else Lc.Line("bonus: trig " + label + " (the event carries no dwarf) host reacts=" + react[0] + " clone reacts=" + react[1]);
+                }
+            }
+            catch (Exception e) { Check("trig " + label, false, e.GetType().Name + ": " + e.Message); }
+        }
+
+        /// <summary>`-lcarttrig`: per trigger artifact, who reacts to an event of which dwarf (see TrigMatrix). Twin `-lcnoartmirror`.</summary>
+        internal static void Trig(Player host, Player clone)
+        {
+            if (_trigDone || host == null || clone == null) return;
+            _trigDone = true; _ok = 0; _bad = 0;
+            Action<Player> hurt = p => { try { p.currentHp = (long)(Hp(p) * 0.5); } catch { } };
+            // level-up is shared (the game raises the event once, for the host): both copies reacting is right, so these two only report
+            TrigMatrix<HealOnLevelUpArtifact>(host, clone, "HealOnLevelUp", "HealOnLevelUpArtifactData", who => h => h.OnLevelGain(new PlayerLevelGainArgs(who, 2)), false, hurt);
+            TrigMatrix<ScaleStatWithMissingHpArtifact>(host, clone, "MissingHp(armor)", "ScaleStatWithMissingHpArtifactData_Armor", who => h => { long m = (long)Hp(who); who.currentHp = m / 2; h.OnPlayerDamageTaken(new PlayerDamageTakenArgs(1L, who, m / 2, m, default(EDamageSource))); }, false, hurt);
+            // damage taken: only the dwarf it happened to. Twin `-lcnoartowner`
+            TrigMatrix<TimedBuffOnDamageTakenArtifact>(host, clone, "TimedBuffOnDamage(dodge)", "TimedBuffOnDamageTakenArtifactData_Dodge", who => h => h.OnDamageTaken(new PlayerDamageTakenArgs(1L, who, (long)Hp(who), (long)Hp(who), default(EDamageSource))), true);
+            // reroll: only the dwarf who is choosing
+            TrigMatrix<LuckRerollArtifact>(host, clone, "LuckReroll", "LuckRerollArtifactData", who => h => { Chooser.Who = who.Pointer == host.Pointer ? 1 : 2; try { h.OnPreReroll(new PreRerollArgs(false, default(ECurrency))); } finally { Chooser.Who = 0; } }, true);
+            // per-level artifact: the host levels up twice; both dwarves' copies must have applied the same number of levels (max HP -3 per level, see the data)
+            try
+            {
+                ArtifactSkillData lvl = null; foreach (var a in Resources.FindObjectsOfTypeAll<ArtifactSkillData>()) if (a != null && a.name == "StatModPrPlayerLevelArtifactData") { lvl = a; break; }
+                if (lvl == null) Check("trig PerLevel: data exists", false, "not loaded");
+                else
+                {
+                    clone.currentLevel = host.currentLevel;
+                    host.EquipArtifact(lvl, false);
+                    var hs = UnityEngine.Object.FindObjectsOfType<StatModPrPlayerLevelArtifact>();
+                    double h0 = Hp(host), c0 = Hp(clone);
+                    for (int k = 0; k < 2; k++) { host.currentLevel = host.currentLevel + 1; var args = new PlayerLevelGainArgs(host, host.currentLevel); foreach (var hd in hs) { try { hd.OnPlayerLevelUpStatUpdate(args); } catch (Exception e) { Lc.Line("bonus: level handler threw " + e.GetType().Name); } } }
+                    double dh = Hp(host) - h0, dc = Hp(clone) - c0;
+                    Lc.Line("bonus: trig PerLevel after two host levels: max HP change host " + dh.ToString("F1") + " clone " + dc.ToString("F1") + " (clone level " + clone.currentLevel + ", host level " + host.currentLevel + ")");
+                    Check("trig PerLevel: the copy of player 2 has applied as many levels as the host's", Math.Abs(dh) > 0.01 && dc * dh > 0 && dc / dh > 0.7 && dc / dh < 1.3, "host " + dh.ToString("F1") + " (" + (100 * dh / h0).ToString("F2") + " %) clone " + dc.ToString("F1") + " (" + (100 * dc / c0).ToString("F2") + " %); the two dwarves have different base max HP, so the amounts differ and the percentage is compared");
+                }
+            }
+            catch (Exception e) { Check("trig PerLevel", false, e.GetType().Name + ": " + e.Message); }
+            // wallet artifact (crit chance per nitra): 100 nitra for both, then player 2 spends 60 of its own: only player 2's crit chance may fall
+            try
+            {
+                ArtifactSkillData wa = null; foreach (var a in Resources.FindObjectsOfTypeAll<ArtifactSkillData>()) if (a != null && a.name == "ScaleStatWithWalletArtifactData_NitraToCritChance") { wa = a; break; }
+                var hw = Wallets.Host(); var w2 = Wallets.Ensure();
+                if (wa == null || hw == null || w2 == null) Check("trig Wallet: setup", false, "artifact=" + (wa != null) + " hostWallet=" + (hw != null) + " w2=" + (w2 != null));
+                else
+                {
+                    var hb = Stats(host)[9]; var cb = Stats(clone)[9];
+                    host.EquipArtifact(wa, false);
+                    hw.Add(ECurrency.NITRA, 100, false);                  // the plugin credits the second wallet as well
+                    double h1 = Stats(host)[9] - hb, c1 = Stats(clone)[9] - cb;
+                    w2.Spend(ECurrency.NITRA, 60);
+                    double h2 = Stats(host)[9] - hb, c2 = Stats(clone)[9] - cb;
+                    Lc.Line("bonus: trig Wallet nitra host/P2 = " + hw.Nitra + "/" + w2.Nitra + " crit chance gain: after +100 host " + h1.ToString("F3") + " clone " + c1.ToString("F3") + " | after P2 spent 60: host " + h2.ToString("F3") + " clone " + c2.ToString("F3") + " (fixes " + ArtifactOwner.WalletFixes + ")");
+                    Check("trig Wallet: after player 2 spent, only player 2's bonus fell (the host's stayed, the clone's is 40/100 of it)", h1 > 0.0001 && Math.Abs(h2 - h1) < 1e-4 && Math.Abs(c2 - 0.4 * h2) < 0.02 * Math.Max(1.0, h2 * 100), "host " + h1.ToString("F3") + "->" + h2.ToString("F3") + " clone " + c1.ToString("F3") + "->" + c2.ToString("F3"));
+                }
+            }
+            catch (Exception e) { Check("trig Wallet", false, e.GetType().Name + ": " + e.Message); }
+            Lc.Line("bonus: TRIG ok=" + _ok + " fail=" + _bad + (Lc.Has("-lcnoartmirror") ? " (twin: mirror off, FAIL expected)" : ""));
+        }
+
+        /// <summary>`-lcartsweep`: every artifact the game has, equipped once on the host. Each one must end up on both dwarves (stacks), a trigger artifact must get its own
+        /// handler on each dwarf, and an artifact with stat mods must change a stat on each dwarf. Twin `-lcnoartmirror` (the mirror off: the clone gets nothing, FAIL expected).
+        /// What each trigger does when its event fires is a second step (per class), not covered here.</summary>
+        internal static void Sweep(Player host, Player clone)
+        {
+            if (_swept || host == null || clone == null) return;
+            _swept = true; _ok = 0; _bad = 0;
+            try
+            {
+                var all = Resources.FindObjectsOfTypeAll<ArtifactSkillData>();
+                int n = 0;
+                foreach (var a in all)
+                {
+                    if (a == null) continue;
+                    string nm = a.name;
+                    // class artifacts are the dwarf's own starter (not mirrored on purpose); the others change the run's state on equip (a weapon, a swarm) or need their own event
+                    if (nm.StartsWith("ClassArtifactData") || nm.StartsWith("BookOfExperience") || nm.StartsWith("WeaponBox") || nm.StartsWith("SpawnHuuli")) { Lc.Line("bonus: sweep skip " + nm); continue; }
+                    n++;
+                    var hs0 = Stats(host); var cs0 = Stats(clone); int hh0 = Handlers(host), ch0 = Handlers(clone);
+                    try { host.EquipArtifact(a, false); } catch (Exception e) { Check("sweep " + nm + ": equip", false, e.GetType().Name + ": " + e.Message); continue; }
+                    int hst = host.GetArtifactStacks(a), cst = clone.GetArtifactStacks(a);
+                    var hs1 = Stats(host); var cs1 = Stats(clone); int hh1 = Handlers(host), ch1 = Handlers(clone);
+                    bool trig = a is TriggerArtifactData, mods = false; try { mods = a.statMods != null && a.statMods.Length > 0; } catch { }
+                    int hc = Changed(hs0, hs1), cc = Changed(cs0, cs1);
+                    bool ok = hst >= 1 && cst == hst;
+                    string why = "stacks host/clone=" + hst + "/" + cst;
+                    if (trig) { ok &= (hh1 - hh0) >= 1 && (ch1 - ch0) >= 1; why += " handlers +" + (hh1 - hh0) + "/+" + (ch1 - ch0); }
+                    if (mods) { ok &= hc >= 1 && cc >= 1; why += " statsChanged host/clone=" + hc + "/" + cc; }
+                    Check("sweep " + nm + " (" + (trig ? "trigger" : "stat") + ")", ok, why);
+                }
+                Lc.Line("bonus: SWEEP artifacts=" + n + " ok=" + _ok + " fail=" + _bad + (Lc.Has("-lcnoartmirror") ? " (twin: mirror off, FAIL expected)" : ""));
+            }
+            catch (Exception e) { Lc.Line("bonus: sweep threw " + e.GetType().Name + ": " + e.Message); }
+        }
 
         /// <summary>Read-only look at the open questions (twin of nothing: it changes no game state apart from the one artifact it equips on the host).</summary>
         internal static void Probe(Player host, Player clone)
@@ -792,6 +944,48 @@ namespace LocalCoop
                     else Check("Ancient Knowledge data found", false, "none loaded");
                 }
                 catch (Exception e) { Check("Ancient Knowledge check", false, e.GetType().Name); }
+                // check 4 (hand test: the "max HP per level" artifact worked for player 1 only): equip it on the host (mirrored), then hand every handler the host's level-up
+                // and log what each dwarf's max HP does. First question: does the handler of the clone react to an event that names the host?
+                try
+                {
+                    StatModPrPlayerLevelArtifactData lvl = null;
+                    foreach (var d in Resources.FindObjectsOfTypeAll<StatModPrPlayerLevelArtifactData>()) if (d != null) { lvl = d; break; }
+                    if (lvl == null) Check("a per-level stat artifact exists", false, "none loaded");
+                    else
+                    {
+                        host.EquipArtifact(lvl, false);
+                        var hs = UnityEngine.Object.FindObjectsOfType<StatModPrPlayerLevelArtifact>();
+                        Check("the per-level artifact has a handler on each dwarf", hs.Length == 2, "handlers=" + hs.Length + " stacks host/clone=" + host.GetArtifactStacks(lvl) + "/" + clone.GetArtifactStacks(lvl));
+                        try
+                        {
+                            var sb = new System.Text.StringBuilder("bonus: level artifact " + lvl.name + " mods per level:");
+                            var pm = lvl.StatModsPrPlayerLevel; if (pm != null) foreach (var m in pm) if (m != null) sb.Append(' ').Append(m.StatType).Append('=').Append(m.value.ToString("F3"));
+                            string ds = ""; try { ds = System.Text.RegularExpressions.Regex.Replace(lvl.Description, "<[^>]*>", ""); } catch { }
+                            Lc.Line(sb + " | " + ds.Replace('\n', ' '));
+                        }
+                        catch (Exception e) { Lc.Line("bonus: level artifact mods threw " + e.GetType().Name); }
+                        // who owns which handler, then three cases: (a) the event the game fires (names the host) to every handler, (b) the clone's handler given an event that names the clone
+                        Player OwnerOf(StatModPrPlayerLevelArtifact x) { return x.transform.IsChildOf(clone.transform) ? clone : x.transform.IsChildOf(host.transform) ? host : null; }
+                        string Delta(double[] a, double[] b) { var s = ""; string[] nmz = { "maxHp", "moveSpeed", "lifeRegen", "dodge", "armor", "miningSpeed", "xpGain", "luck", "pickupRadius", "critChance", "critDamage" }; for (int i = 0; i < a.Length; i++) if (!double.IsNaN(a[i]) && Math.Abs(a[i] - b[i]) > 1e-6) s += nmz[i] + " " + a[i].ToString("F2") + "->" + b[i].ToString("F2") + " "; return s.Length > 0 ? s : "no change"; }
+                        int lv = 2;
+                        foreach (var hd in hs)
+                        {
+                            var own = OwnerOf(hd); if (own == null) { Lc.Line("bonus: level handler of unknown owner"); continue; }
+                            var s0 = Stats(own); try { hd.OnPlayerLevelUpStatUpdate(new PlayerLevelGainArgs(host, lv)); } catch (Exception e) { Lc.Line("bonus: level handler threw " + e.GetType().Name); }
+                            var s1 = Stats(own);
+                            Lc.Line("bonus: level event naming the HOST reaches the handler of " + Who(own) + ": " + Delta(s0, s1));
+                            if (own.Pointer == clone.Pointer) Check("the per-level artifact on player 2 reacts to the level event the game fires (it names the host)", Changed(s0, s1) > 0, Delta(s0, s1));
+                        }
+                        foreach (var hd in hs)
+                        {
+                            var own = OwnerOf(hd); if (own == null || own.Pointer != clone.Pointer) continue;
+                            var s0 = Stats(own); try { hd.OnPlayerLevelUpStatUpdate(new PlayerLevelGainArgs(clone, lv + 1)); } catch (Exception e) { Lc.Line("bonus: level handler threw " + e.GetType().Name); }
+                            var s1 = Stats(own);
+                            Lc.Line("bonus: level event naming the CLONE reaches its own handler: " + Delta(s0, s1));
+                        }
+                    }
+                }
+                catch (Exception e) { Check("per-level artifact check", false, e.GetType().Name + ": " + e.Message); }
                 Lc.Line("bonus: SUMMARY ok=" + _ok + " fail=" + _bad + (Lc.Has("-lcnoartmirror") || Lc.Has("-lcbookbug") ? " (twin: mirror off, FAIL expected)" : ""));
             }
             catch (Exception e) { Lc.Line("bonus: probe threw " + e.GetType().Name + ": " + e.Message); }

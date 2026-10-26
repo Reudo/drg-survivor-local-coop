@@ -77,6 +77,7 @@ namespace LocalCoop
 
         internal static void Install(Harmony h)
         {
+            ArtifactOwner.Install(h);
             if (_hooked || Lc.Has("-lcnoshotowner")) return;
             _hooked = true;
             int n = 0;

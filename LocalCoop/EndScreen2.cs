@@ -36,7 +36,7 @@ namespace LocalCoop
         private static string ProgressionP2Text(UIProgressionSummaryForm pf) { return ""; }
         private static int _ok, _fail;
         private static void Ck(string what, bool pass, string detail) { if (pass) _ok++; else _fail++; Lc.Line("ui: CHECK " + (pass ? "ok  " : "FAIL") + " " + what + " - " + detail); }
-        internal static int Windows;
+        internal static int Windows; internal static bool ArtifactsHidden;
 
         [HarmonyLib.HarmonyPatch(typeof(UIEndScreen), "Setup")]
         internal static class SetupPatch
@@ -147,6 +147,19 @@ namespace LocalCoop
                 }
             }
             catch (Exception e) { Lc.LineOnce("endscreen2: class line threw " + e.GetType().Name + ": " + e.Message); }
+            // ---- artifacts: not shown (hand test: the screen listed the artifacts of player 1 only, which reads as if player 2 had none). Twin `-lcshowartifacts`. ----
+            try
+            {
+                if (!Lc.Has("-lcshowartifacts") && es.artifactContainer != null)
+                {
+                    var ac = es.artifactContainer.transform;
+                    // the whole window around the images, not only the image row; the container's parent is the window when it has a title
+                    var win = ac.parent != null && ac.parent.name.StartsWith("NonSelectableWindow") ? ac.parent : ac;
+                    win.gameObject.SetActive(false); ArtifactsHidden = true;
+                    Info += ", artifacts hidden (" + win.name + ")";
+                }
+            }
+            catch (Exception e) { Lc.LineOnce("endscreen2: artifacts threw " + e.GetType().Name + ": " + e.Message); }
             Windows++;
             Lc.Line("endscreen2: " + Info);
         }
@@ -202,6 +215,64 @@ namespace LocalCoop
             ProgInfo = "line added for " + cn;
         }
 
+        private static long Tracked(Player p)
+        {
+            long t = 0; try { if (p != null && p.weapons != null) for (int i = 0; i < p.weapons.Count; i++) if (p.weapons[i] != null) t += p.weapons[i].trackedTotalDamage; } catch { }
+            return t;
+        }
+
+        /// <summary>hand test: the damage numbers of player 1 and player 2 on the end screen looked wrong. What the game has, what each window shows (read off the screen's own texts).</summary>
+        private static void DamageNumbers(UIEndScreen es)
+        {
+            try
+            {
+                var host = Phase1.First(); var clone = Phase1.Second;
+                long h = Tracked(host), c = Tracked(clone);
+                var sb = new StringBuilder("endscreen: damage tracked by the weapons: P1=" + h + " P2=" + c + " sum=" + (h + c) + " | tracker:");
+                long typeSum = 0; var tr = CoopStart.Resolve<CoreStatTracker>();
+                if (tr != null)
+                    foreach (var pi in typeof(CoreStatTracker).GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+                    {
+                        if (pi.PropertyType != typeof(long) || pi.GetIndexParameters().Length > 0) continue;
+                        long v; try { v = (long)pi.GetValue(tr, null); } catch { continue; }
+                        sb.Append(' ').Append(pi.Name).Append('=').Append(v);
+                        if (pi.Name.EndsWith("Done")) typeSum += v;
+                    }
+                sb.Append(" | per-type sum=" + typeSum);
+                Lc.Line(sb.ToString());
+                Lc.Line("endscreen: seconds since the run began: " + (Lc.InRunAt >= 0f ? (Time.realtimeSinceStartup - Lc.InRunAt).ToString("F1") : "?") + " (game time scale " + Time.timeScale + ")");
+                float elapsed = Lc.InRunAt >= 0f ? Time.realtimeSinceStartup - Lc.InRunAt : -1f; float maxActive = 0f;
+                foreach (var p in new[] { host, clone })
+                {
+                    if (p == null) continue;
+                    try { for (int i = 0; p.weapons != null && i < p.weapons.Count; i++) if (p.weapons[i] != null) maxActive = Math.Max(maxActive, p.weapons[i].activeTime); } catch { }
+                    var wl = new StringBuilder("endscreen: weapons of " + (p == clone ? "P2" : "P1") + ":");
+                    try
+                    {
+                        for (int i = 0; p.weapons != null && i < p.weapons.Count; i++)
+                        {
+                            var w = p.weapons[i]; if (w == null) continue;
+                            wl.Append(' ').Append(w.data != null ? w.data.name : "?").Append(" tracked=").Append(w.trackedTotalDamage).Append(" dps=").Append(w.TrackedDPS.ToString("F1")).Append(" activeTime=").Append(w.activeTime.ToString("F1")).Append(';');
+                        }
+                        wl.Append(" handlers on the object: ").Append(p.GetComponentsInChildren<WeaponHandler>(true).Length);
+                    }
+                    catch (Exception e) { wl.Append(" threw " + e.GetType().Name + ": " + e.Message); }
+                    Lc.Line(wl.ToString());
+                }
+                // a weapon cannot have been active for longer than the run lasted (the damage per second on the screen is damage / this time)
+                if (Lc.Has("-lcendlate")) Ck("no weapon's active time is longer than the run", elapsed > 0f && maxActive <= elapsed + 2f, "longest active time " + maxActive.ToString("F1") + " s, run " + elapsed.ToString("F1") + " s");
+                // what the screen itself says: every text under the weapon windows and the damage block
+                foreach (var nm in new[] { "Columns/MidColumn/NonSelectableWindow_Weapons", "Columns/MidColumn/LcWeapons2", "Columns/MidColumn/BottomGroup" })
+                {
+                    var t = es.transform.Find(nm); if (t == null) continue;
+                    var tx = new StringBuilder("endscreen: texts in " + nm + ":");
+                    foreach (var tm in t.GetComponentsInChildren<TextMeshProUGUI>(false)) if (tm != null && tm.text.Length > 0 && tm.gameObject.activeInHierarchy) tx.Append(" [").Append(tm.text.Replace('\n', ' ')).Append(']');
+                    Lc.Line(tx.ToString());
+                }
+            }
+            catch (Exception e) { Lc.Line("endscreen: damage numbers threw " + e.GetType().Name + ": " + e.Message); }
+        }
+
         internal static void Test()
         {
             if (TestDone || !Lc.Has("-lcendtest")) return;
@@ -231,8 +302,12 @@ namespace LocalCoop
                                 Ck("player 2's weapons have a window of their own on the end screen", w2 != null && expect > 0 && on == expect, "window=" + (w2 != null) + " rows shown=" + on + " weapons=" + expect);
                                 int sr = 0; foreach (var t in es.GetComponentsInChildren<Transform>(true)) if (t != null && t.name == "LcStatRow" && t.gameObject.activeInHierarchy) sr++;
                                 Ck("player 2's statistics are on the end screen", sr > 0, "rows=" + sr);
+                                bool artShown = es.artifactContainer != null;   // visible = the container and every parent up to the screen are active
+                                if (artShown) for (var tt = es.artifactContainer.transform; tt != null && tt != es.transform; tt = tt.parent) if (!tt.gameObject.activeSelf) { artShown = false; break; }
+                                Ck("the end screen shows no artifacts", !artShown, "artifact area visible=" + artShown + " hidden by plugin=" + ArtifactsHidden);
                                 Ck("the class window has a line for player 2's class", es.transform.Find("Columns/LeftColumn/NonSelectableWindow_Class/Content/List/LcRankXp2") != null, "line present");
                             }
+                            DamageNumbers(es);
                             Shots.Take("endscreen");
                             _at = now + 1.5f; _step++;
                         }

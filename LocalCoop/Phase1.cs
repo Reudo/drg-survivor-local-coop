@@ -434,10 +434,14 @@ namespace LocalCoop
 
         private static float _wlog;
 
-        /// <summary>The game's Player.Update ticks each weapon with DoUpdate(dt); for the clone that path does not reach the weapons, so tick them here.</summary>
+        /// <summary>
+        /// The game ticks the clone's weapons itself (PLAN.md: `-lcnoweapontick` stayed green). The extra tick from here made them run at twice the speed: hand test, the
+        /// end screen showed player 2's damage too high and its damage per second too low; measured: the clone's weapon `activeTime` was 2.07x the other dwarf's and longer than
+        /// the run itself. Off by default now. Twin `-lcweapontick` (the old extra tick).
+        /// </summary>
         private static void TickCloneWeapons()
         {
-            if (Lc.Has("-lcnoweapontick")) return;     // twin: the clone's weapons are never ticked
+            if (!Lc.Has("-lcweapontick")) return;
             try
             {
                 if (Second.weapons == null) return;
@@ -977,6 +981,8 @@ namespace LocalCoop
                 if (_stage2 == 1) Diag(first, Second);
                 if (_stage2 == 2 && Lc.Has("-lcmetaprobe") && first != null) MetaProbe(first);
                 if (_stage2 == 2 && Lc.Has("-lcbonusprobe") && first != null) Bonus.Probe(first, Second);
+                if (_stage2 == 2 && Lc.Has("-lcartsweep") && first != null) Bonus.Sweep(first, Second);
+                if (_stage2 == 2 && Lc.Has("-lcarttrig") && first != null) Bonus.Trig(first, Second);
                 if (_stage2 == 1 && (Mode == "clone-walk" || Mode == "clone-pad" || Mode == "clone-route" || Mode == "clone-cam" || Mode == "clone-hud" || Mode == "clone-leash" || Mode == "play" || Mode == "clone-weapon" || Mode == "clone-target")) { _walkStart = Second.transform.position; Lc.Line("p1: clone stays where it was placed; pos=" + Second.transform.position); }
                 if (_stage2 >= 2 && first != null) Lc.Line("p1: update probe stage " + _stage2 + " clone lastPos=" + Second.lastPos + " pos=" + Second.transform.position + " walkDist=" + Second.walkDistanceMoved + " | first lastPos=" + first.lastPos + " pos=" + first.transform.position + " walkDist=" + first.walkDistanceMoved);
                 if (_stage2 == 1 && (Mode == "clone-walk" || Mode == "clone-pad" || Mode == "clone-route" || Mode == "clone-cam" || Mode == "clone-hud" || Mode == "clone-leash" || Mode == "play" || Mode == "clone-weapon" || Mode == "clone-target"))
