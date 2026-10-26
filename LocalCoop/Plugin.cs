@@ -40,6 +40,7 @@ namespace LocalCoop
                 try { var kb = UnityEngine.InputSystem.Keyboard.current; if (kb != null && kb.f9Key.wasPressedThisFrame) { Chooser.Diag(); Lc.Line("f9: input state written (form=" + AutoStart.ActiveFormName() + ")"); } } catch { }
                 MenuPad.NavWatch();
                 Lc.LogPads();
+                Perf.Run("SaveSlot", SaveSlot.Tick);
                 Perf.Run("AutoStart", AutoStart.Tick);
                 Perf.Run("StateDump", StateDump.Tick);
                 Perf.Run("Shots", Shots.Tick);
@@ -65,6 +66,7 @@ namespace LocalCoop
                 Perf.Run("XpCubes", Bonus.CubeTick);
                 Perf.Run("CubeTest", Bonus.CubeTest);
                 Perf.Run("Revive", Revive.Tick);
+                Perf.Run("MeleeTest", Melee.Test);
                 Perf.Run("CrateTest", Bonus.CrateTest);
                 Perf.Run("SlotArrowTest", Bonus.SlotArrowTest);
                 Perf.Run("ArrowProbe", Bonus.ArrowProbe);

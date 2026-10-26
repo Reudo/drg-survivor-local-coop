@@ -124,6 +124,13 @@ namespace LocalCoop
                     float now = Time.realtimeSinceStartup; if (now < _at) return; _at = now + 0.4f;
                     string src = "-"; float dSelf = -1f, dDown = -1f;
                     if (__5 != null) { src = __5.GetType().Name + "/" + __5.name; var sp = __5.transform.position; dSelf = Vector3.Distance(sp, __instance.transform.position); dDown = Vector3.Distance(sp, Downed.transform.position); }
+                    else
+                    {
+                        // melee hits carry no source: the nearest enemy tells whether one stood at the hit dwarf at all
+                        float best = 1e9f; string nm = "-";
+                        foreach (var e in UnityEngine.Object.FindObjectsOfType<Enemy>()) { if (e == null || !e.isAlive) continue; float d = Vector3.Distance(e.transform.position, __instance.transform.position); if (d < best) { best = d; nm = e.name; } }
+                        src = "- nearest enemy " + nm + " " + best.ToString("F1") + " m";
+                    }
                     Lc.Line("revive: hit on " + Who(__instance) + " while " + Who(Downed) + " is down: dmg " + __0 + " source " + __4 + " " + src + " distance to the hit dwarf " + dSelf.ToString("F1") + " m, to the downed one " + dDown.ToString("F1") + " m, dwarves " + Vector3.Distance(__instance.transform.position, Downed.transform.position).ToString("F1") + " m apart");
                 }
                 catch { }

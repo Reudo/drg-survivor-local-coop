@@ -103,6 +103,7 @@ namespace LocalCoop
                 h.CreateClassProcessor(typeof(SpecialistPatch)).Patch();
                 h.CreateClassProcessor(typeof(MovePatch)).Patch();
                 h.CreateClassProcessor(typeof(Revive.HitDiag)).Patch();
+                h.CreateClassProcessor(typeof(Melee.Guard)).Patch();
                 Lc.Line("buffs2: " + n + " shooters wrapped, weapon specialist counter patched");
             }
             catch (Exception e) { Lc.Line("buffs2: install failed: " + e.GetType().Name + ": " + e.Message); }

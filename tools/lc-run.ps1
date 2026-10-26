@@ -143,6 +143,7 @@ $argList += "-lcshots=$ShotEvery"
 $argList += "-lctest=$Name"
 if ($Extra) { $argList += ($Extra -split '\s+' | Where-Object { $_ }) }
 if ($English) { $argList += '-lcgamelang=en' }
+if (-not ($argList | Where-Object { $_ -like '-lcslot=*' })) { $argList += '-lcslot=3' }     # owner: tests always play in save slot 3 (slots 1 and 2 are the owner's); the saves are still backed up and restored
 if (-not ($argList | Where-Object { $_ -like '-lclang=*' })) { $argList += '-lclang=en' }     # the checks read the English texts, whatever language the game is set to
 
 $verdict = 'FAIL'
