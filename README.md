@@ -4,7 +4,7 @@ Two dwarves in one game, on one PC, with two controllers. A BepInEx 6 (IL2CPP) p
 the second dwarf is a second player object inside the same game process. Playing online with a friend works through Steam Remote Play Together
 (see "Online" below).
 
-**Version 1.0.1. Status: playable.** Supported mission types: **Elimination** and **Escort**. Full runs (stages, shop, end screen, retry) have been
+**Version 1.0.2. Status: playable.** Supported mission types: **Elimination** and **Escort**. Full runs (stages, shop, end screen, retry) have been
 played by hand with two controllers. Other mission types are not offered by the co-op menu and are not tested. Known gaps are listed at the end.
 It replaces the stopped online prototype [drg-survivor-coop](https://github.com/Reudo/drg-survivor-coop).
 
@@ -30,7 +30,9 @@ Not affiliated with Funday Games or Coffee Stain. You need the game; this repo c
 - **Pause menu per player**: player 1's pause button opens player 1's weapons, artifacts, stats and class; player 2's Start button opens player 2's.
   Only the controller that opened it drives it.
 - **Revive**: a dwarf that dies lies still; the other one stands next to it for a few seconds (ring on the ground) and it gets up with part of its health.
-  Enemies go for the dwarf that is up. Switch it off with the REVIVE button on the last menu page.
+  Enemies go for the dwarf that is up, and an enemy's melee hit only lands on the dwarf it really touches. Switch it off with the REVIVE button on the last menu page.
+- Both classes get the run's class experience, and with it their unlocks (subclasses, weapons). Saves where player 2's class reached a level without its
+  unlock are caught up the next time the game starts with the mod.
 - Artifacts and general stat upgrades ("COOP BONUS") count for both dwarves; weapons and weapon upgrades stay with the dwarf that chose them.
 - Both dwarves can use what the game builds around "the player": supply-pod and excavation circles, healing pillars, the bounce mushroom, the
   escort mission's drilldozer circle, magma floor and explosion damage, damage numbers, loot crates, XP orbs (small and large), pickups.
@@ -55,7 +57,7 @@ Taken by the test harness from the real game (the game's own texts are English h
 
 ## Install
 
-Play with the installer package `DrgSurvivorLocalCoop-1.0.1-Installer.zip` (it is the release file, not stored in the repo; built with `tools/build-installer.ps1`). It contains the plugin, the installer scripts and a copy of BepInEx for PCs that have none. Extract the ZIP completely and double-click
+Play with the installer package `DrgSurvivorLocalCoop-1.0.2-Installer.zip` (it is the release file, not stored in the repo; built with `tools/build-installer.ps1`). It contains the plugin, the installer scripts and a copy of BepInEx for PCs that have none. Extract the ZIP completely and double-click
 `Install-LocalCoop.bat`. It finds the Steam folder, backs up your save, installs BepInEx only if there is none, copies the plugin, and creates the
 shortcut "DRG Survivor Co-op". BepInEx is switched off for normal starts, so single player stays the unchanged game. `installer/README.txt`
 (English) and `installer/LIES-MICH.txt` (German) have the details; `Uninstall-LocalCoop.bat` removes everything again.
@@ -76,6 +78,9 @@ The invite works and a full run was played this way; the guest's pad on every si
 - DLCs are not supported at the moment, and the game was not tested with DLCs active.
 - Drones: both dwarves share one drone by default; a second drone for player 2 is an experiment. Turrets of player 2 deal damage (hand-tested).
 - Only Elimination and Escort; other mission types are not offered.
+- Mission goals (for example "equip 4 kinetic weapons") count player 1's weapons only.
+- A weapon sound sometimes keeps playing in the shop or while clicking through unlocks before the end screen (hand test; not reproduced in a test yet).
+- In one long hand-tested run player 1's LMG turret showed far less damage and active time than player 2's; a 40-second test with both turrets showed no difference.
 - Remote Play: see above.
 - The thin dark red mark at the right end of the health bars is part of the game's own bar frame.
 

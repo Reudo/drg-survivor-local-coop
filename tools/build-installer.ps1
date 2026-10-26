@@ -1,8 +1,8 @@
 <#
   build-installer.ps1 - builds the installer package for the owner's PC:
 
-    local\release\DrgSurvivorLocalCoop-1.0.1-Installer.zip   (and the unpacked folder next to it)
-    -Nexus: local\release\DrgSurvivorLocalCoop-1.0.1-Nexus.zip   (plugin + installer scripts + docs; BepInEx is a requirement, not included)
+    local\release\DrgSurvivorLocalCoop-1.0.2-Installer.zip   (and the unpacked folder next to it)
+    -Nexus: local\release\DrgSurvivorLocalCoop-1.0.2-Nexus.zip   (plugin + installer scripts + docs; BepInEx is a requirement, not included)
 
   Contents: Install-LocalCoop.bat/.ps1, payload\ (LocalCoop.dll, the launchers, the uninstaller, bepinex-base (unpacked BepInEx) for PCs that have none),
   README.txt, LIES-MICH.txt (German), BUILDINFO.txt. No game files.
@@ -87,12 +87,12 @@ $nested = @(Get-ChildItem $stageRoot -Recurse -File | Where-Object { $_.Extensio
 if ($nested.Count -gt 0) { throw ('the package would contain an archive inside the archive: ' + (($nested | ForEach-Object { $_.FullName.Substring($stageRoot.Length + 1) }) -join ', ')) }
 $h = (Get-FileHash $dll -Algorithm SHA256).Hash
 Set-Content -Path (Join-Path $stageRoot 'BUILDINFO.txt') -Encoding UTF8 -Value @(
-  'Deep Rock Galactic: Survivor - Local Co-op 1.0.1',
+  'Deep Rock Galactic: Survivor - Local Co-op 1.0.2',
   ('Built: ' + (Get-Date -Format 's')),
   ('LocalCoop.dll SHA-256: ' + $h),
   $(if ($Nexus) { 'BepInEx: not included (requirement: 6.0.0-be.789, Unity IL2CPP, win-x64)' } else { 'BepInEx (only for PCs without BepInEx): ' + $bep.Name }))
 
-$outZip = Join-Path $rel $(if ($Nexus) { 'DrgSurvivorLocalCoop-1.0.1-Nexus.zip' } else { 'DrgSurvivorLocalCoop-1.0.1-Installer.zip' })
+$outZip = Join-Path $rel $(if ($Nexus) { 'DrgSurvivorLocalCoop-1.0.2-Nexus.zip' } else { 'DrgSurvivorLocalCoop-1.0.2-Installer.zip' })
 if (Test-Path $outZip) { Remove-Item $outZip -Force }
 # entries with forward slashes (Compress-Archive of Windows PowerShell 5.1 writes backslashes, which other unpackers turn into file names)
 Add-Type -AssemblyName System.IO.Compression
