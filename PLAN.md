@@ -428,3 +428,8 @@ Hand-test wishes of the owner, each built, run and twinned; the owner has not se
 - Runs (slot 3, P2 Driller rank 14 -> 40): fix PASS (9/9 milestones complete, StrongArm open); twin FAIL (5 behind, StrongArm locked); repair right after the twin PASS. Across launches: twin kept -> next launch without repair still broken (CM2 14, StrongArm locked) -> launch with repair: 5 caught up -> next launch without repair: CM2 complete, StrongArm unlocked. Original slot 3 restored, identical.
 - Engineer's subclass level text: Tinkerer is the level-9 one (was Maintenance).
 - Not run: the repair on the owner's slot 1 (it runs on their next launch with this version).
+
+## LMG turret damage per dwarf (2026-10-26)
+- Hand test (end screen, 12:36 run): player 1's turret level 20 with 57,983 damage at 352/s (165 s active), player 2's level 4 with 834,466 at 1,659/s (503 s active).
+- Code read: each SpawnWeaponHandler has its own turret pool; the turret's gun is a handler with the spawn handler as external owner, and `TrackDamage` (RVA 0x8A8C70) adds to the owner. No path found that books one dwarf's turret on the other.
+- `-lcturrettest`: both dwarves get the LMG turret, 30 m apart, 40 s: active P1 34.4 s / P2 34.4 s, damage P1 5,060 / P2 5,620; both turrets went from level 1 to 2 at the same moment (level-up rounds of both dwarves, not checked further). Short window only: the 12-minute case is not reproduced and stays unexplained.

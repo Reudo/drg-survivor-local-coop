@@ -68,6 +68,7 @@ namespace LocalCoop
                 Perf.Run("CubeTest", Bonus.CubeTest);
                 Perf.Run("Revive", Revive.Tick);
                 Perf.Run("MeleeTest", Melee.Test);
+                Perf.Run("TurretTest", TurretTest.Tick);
                 Perf.Run("CrateTest", Bonus.CrateTest);
                 Perf.Run("SlotArrowTest", Bonus.SlotArrowTest);
                 Perf.Run("ArrowProbe", Bonus.ArrowProbe);
