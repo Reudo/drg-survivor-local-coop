@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using DRS.UI;
 using HarmonyLib;
@@ -157,11 +158,27 @@ namespace LocalCoop
                     var win = ac.parent != null && ac.parent.name.StartsWith("NonSelectableWindow") ? ac.parent : ac;
                     win.gameObject.SetActive(false); ArtifactsHidden = true;
                     Info += ", artifacts hidden (" + win.name + ")";
+                    // hand test (1.0.1, a run with artifacts): the icons showed up at the bottom of player 2's weapon window. The artifact row lives inside the
+                    // weapon window, and player 2's window is a copy made above, artifacts included. Twin `-lcshowartifacts` leaves both.
+                    var copy = CopyIn(w1, w2, win);
+                    if (copy != null) { copy.gameObject.SetActive(false); Info += ", also in player 2's window"; }
+                    else if (win.IsChildOf(w1)) Info += ", NOT FOUND in player 2's window";
                 }
             }
             catch (Exception e) { Lc.LineOnce("endscreen2: artifacts threw " + e.GetType().Name + ": " + e.Message); }
             Windows++;
             Lc.Line("endscreen2: " + Info);
+        }
+
+        /// <summary>The object in the copied window <paramref name="copy"/> that sits at the same place as <paramref name="t"/> in <paramref name="orig"/>; null when t is not inside orig.</summary>
+        private static Transform CopyIn(Transform orig, Transform copy, Transform t)
+        {
+            if (orig == null || copy == null || t == null || !t.IsChildOf(orig) || t == orig) return null;
+            var path = new List<int>();
+            for (var x = t; x != orig; x = x.parent) path.Insert(0, x.GetSiblingIndex());
+            var c = copy;
+            foreach (int i in path) { if (i >= c.childCount) return null; c = c.GetChild(i); }
+            return c.name == t.name ? c : null;
         }
 
         private static Transform _t1, _t2; private static string _titleBase = ""; private static float _titleUntil;
@@ -285,6 +302,16 @@ namespace LocalCoop
                 switch (_step)
                 {
                     case 0:
+                        // hand test (1.0.1): the artifact icons showed up in player 2's window only in runs with artifacts; `-lcendarts` gives the host two before the end
+                        if (Lc.Has("-lcendarts"))
+                        {
+                            int given = 0; var host = Phase1.First();
+                            foreach (var a in Resources.FindObjectsOfTypeAll<ArtifactSkillData>())
+                            {
+                                if (given >= 2 || a == null || a is ClassArtifactData || host == null) continue;
+                                try { host.EquipArtifact(a, false); given++; Lc.Line("endscreen: host got artifact " + a.name); } catch (Exception e) { Lc.Line("endscreen: equip " + a.name + " threw " + e.GetType().Name); }
+                            }
+                        }
                         CoreGameEvents.TriggerCoreRunEnd(ECoreRunEndCondition.WIN);
                         Lc.Line("endscreen: the run was ended through the game's own event");
                         _at = now + 7f; _step++;
@@ -302,9 +329,10 @@ namespace LocalCoop
                                 Ck("player 2's weapons have a window of their own on the end screen", w2 != null && expect > 0 && on == expect, "window=" + (w2 != null) + " rows shown=" + on + " weapons=" + expect);
                                 int sr = 0; foreach (var t in es.GetComponentsInChildren<Transform>(true)) if (t != null && t.name == "LcStatRow" && t.gameObject.activeInHierarchy) sr++;
                                 Ck("player 2's statistics are on the end screen", sr > 0, "rows=" + sr);
-                                bool artShown = es.artifactContainer != null;   // visible = the container and every parent up to the screen are active
-                                if (artShown) for (var tt = es.artifactContainer.transform; tt != null && tt != es.transform; tt = tt.parent) if (!tt.gameObject.activeSelf) { artShown = false; break; }
-                                Ck("the end screen shows no artifacts", !artShown, "artifact area visible=" + artShown + " hidden by plugin=" + ArtifactsHidden);
+                                // visible = any object named like the artifact container (the game's and the copy in player 2's window) is active up to the screen
+                                int artShown = 0; string artName = es.artifactContainer != null ? es.artifactContainer.name : "";
+                                if (artName.Length > 0) foreach (var t in es.GetComponentsInChildren<Transform>(true)) if (t != null && t.name == artName && t.gameObject.activeInHierarchy) artShown++;
+                                Ck("the end screen shows no artifacts", artName.Length > 0 && artShown == 0, "artifact areas visible=" + artShown + " (name '" + artName + "') hidden by plugin=" + ArtifactsHidden);
                                 Ck("the class window has a line for player 2's class", es.transform.Find("Columns/LeftColumn/NonSelectableWindow_Class/Content/List/LcRankXp2") != null, "line present");
                             }
                             DamageNumbers(es);
