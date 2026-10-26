@@ -485,6 +485,21 @@ namespace LocalCoop
             Il2CppInterop.Runtime.IL2CPP.il2cpp_gc_wbarrier_set_field(o, o + (int)off, value);
         }
 
+        /// <summary>Writes a bool field through its pointer (same reason as SetRef: the interop's setters are not trusted).</summary>
+        internal static void SetBool(Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase obj, Type t, string field, bool value)
+        {
+            if (obj == null) return;
+            string key = t.FullName + "." + field;
+            uint off;
+            if (!_offsets.TryGetValue(key, out off))
+            {
+                var fi = t.GetField("NativeFieldInfoPtr_" + field, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                off = Il2CppInterop.Runtime.IL2CPP.il2cpp_field_get_offset((IntPtr)fi.GetValue(null));
+                _offsets[key] = off;
+            }
+            System.Runtime.InteropServices.Marshal.WriteByte(obj.Pointer + (int)off, (byte)(value ? 1 : 0));
+        }
+
         /// <summary>An enemy's target lives in four places: its own field, the behaviour's target, the melee handler's player, and each ranged handler's target.</summary>
         private static void SetEnemyTarget(Enemy e, Player p)
         {

@@ -23,7 +23,8 @@ param(
   [int]$MaxSeconds = 360,
   [switch]$NoAuto,
   [switch]$English,   # test only: the game itself runs in English (-lcgamelang=en), for screenshots
-  [switch]$NoClick   # do not click the splash from here (tests the in-game virtual gamepad alone)
+  [switch]$NoClick,  # do not click the splash from here (tests the in-game virtual gamepad alone)
+  [switch]$KeepSaves # test only: leave the saves as the run left them (backup still made), for a check in the next launch; restore by hand from the backup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -217,10 +218,10 @@ if (Test-Path $shotDir) {
 }
 
 $resultLine = if (Test-Path (Join-Path $runDir 'lc.log')) { (Select-String -Path (Join-Path $runDir 'lc.log') -Pattern 'RESULT ' | Select-Object -Last 1).Line } else { $null }
-$restore = Restore-Saves
+if ($KeepSaves) { $restore = 'kept'; $notes += "saves KEPT as the run left them (-KeepSaves), backup: $backup" } else { $restore = Restore-Saves }
 
 $pluginPass = [bool]($resultLine -and $resultLine -match 'RESULT \S+ PASS')
-$verdict = if ($pluginPass -and $exited -and $goodShots -ge 1 -and $restore -eq 'identical') { 'PASS' } else { 'FAIL' }
+$verdict = if ($pluginPass -and $exited -and $goodShots -ge 1 -and ($restore -eq 'identical' -or $restore -eq 'kept')) { 'PASS' } else { 'FAIL' }
 $summary = @(
   "run: $runDir",
   "verdict: $verdict",

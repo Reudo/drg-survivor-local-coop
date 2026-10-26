@@ -41,6 +41,7 @@ namespace LocalCoop
                 MenuPad.NavWatch();
                 Lc.LogPads();
                 Perf.Run("SaveSlot", SaveSlot.Tick);
+                Perf.Run("UnlockProbe", UnlockProbe.Tick);
                 Perf.Run("AutoStart", AutoStart.Tick);
                 Perf.Run("StateDump", StateDump.Tick);
                 Perf.Run("Shots", Shots.Tick);
@@ -80,6 +81,7 @@ namespace LocalCoop
                 Perf.Run("EndScreen2Titles", EndScreen2.KeepTitles);
                 Perf.Run("RunProgress", RunProgress.Tick);
                 Perf.Run("ProgressTest", RunProgress.Test);
+                Perf.Run("MilestoneRepair", RunProgress.Repair);
                 Perf.Run("SupplyTest", LevelBanner.Test);
                 Perf.Run("Buffs2", Buffs2.Tick);
                 Perf.Run("Buffs2Test", Buffs2.Test);

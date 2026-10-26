@@ -587,11 +587,12 @@ namespace LocalCoop
             }
         }
 
-        /// <summary>The class level a subclass opens at (0 = free): the owner's reading of the game's menu, the game's data has no such number. Second subclass 9, third 18.</summary>
+        /// <summary>The class level a subclass opens at (0 = free). The game's data has it as milestones MSDataClassRank_&lt;Class&gt;_CM1 (9) and _CM2 (18) (read by -lcunlockprobe).
+        /// Hand test: the engineer's second subclass said "LOCKED" without a level: it is the Tinkerer (Bastler), Maintenance is the free one.</summary>
         internal static int SubLevel(ClassArtifactData a)
         {
             string n = a != null ? a.name : "";
-            foreach (var k in new[] { "Recon", "Interrogator", "Juggernaut", "Maintenance" }) if (n.Contains(k)) return 9;
+            foreach (var k in new[] { "Recon", "Interrogator", "Juggernaut", "Tinkerer" }) if (n.Contains(k)) return 9;
             foreach (var k in new[] { "SharpShooter", "StrongArm", "Gunner_Heavy", "Explosive" }) if (n.Contains(k)) return 18;
             return 0;
         }

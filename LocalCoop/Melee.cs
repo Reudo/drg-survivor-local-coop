@@ -17,20 +17,6 @@ namespace LocalCoop
     internal static class Melee
     {
         internal static int Remote, Blocked, Redirected, Applied, Wide, Near, Cleared;
-        private static readonly Dictionary<string, int> _boolOff = new Dictionary<string, int>();
-
-        /// <summary>Writes a bool field through its pointer (the interop's setters are not trusted, see Phase1.SetRef).</summary>
-        private static void SetBool(Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase obj, Type t, string field, bool v)
-        {
-            string key = t.FullName + "." + field; int off;
-            if (!_boolOff.TryGetValue(key, out off))
-            {
-                var fi = t.GetField("NativeFieldInfoPtr_" + field, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-                off = (int)Il2CppInterop.Runtime.IL2CPP.il2cpp_field_get_offset((IntPtr)fi.GetValue(null));
-                _boolOff[key] = off;
-            }
-            System.Runtime.InteropServices.Marshal.WriteByte(obj.Pointer + off, (byte)(v ? 1 : 0));
-        }
 
         private static string ColliderInfo(AIMeleeSkillHandler m)
         {
@@ -98,7 +84,7 @@ namespace LocalCoop
                     Blocked++; Log("melee: remote hit dropped: " + info);
                     // the "touches a dwarf" flag is stale (test: enemies kept it while walking 20-30 m from both dwarves; no trigger exit comes when a body stops counting);
                     // cleared, the enemy walks on and sets it again when it really reaches a dwarf. Twin of this part `-lcnomeleeclear`.
-                    if (!Lc.Has("-lcnomeleeclear")) { SetBool(__instance, typeof(AIMeleeSkillHandler), "playerInDamageRange", false); Cleared++; }
+                    if (!Lc.Has("-lcnomeleeclear")) { Phase1.SetBool(__instance, typeof(AIMeleeSkillHandler), "playerInDamageRange", false); Cleared++; }
                     return false;
                 }
                 catch (Exception e) { Lc.LineOnce("melee: guard threw " + e.GetType().Name + ": " + e.Message); return true; }
