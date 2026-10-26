@@ -17,14 +17,14 @@ namespace LocalCoop
     ///    after launch, coreclr c0000005). Phase 0 installs no patch at all.
     ///  - Every tick body is wrapped, a bug here must never take the game down.
     /// </summary>
-    [BepInPlugin("localcoop.drgsurvivor", "DRG Survivor local co-op", "1.0.0")]
+    [BepInPlugin("localcoop.drgsurvivor", "DRG Survivor local co-op", "1.0.1")]
     public class Plugin : BasePlugin
     {
         public override void Load()
         {
             Lc.Init(Log);
             AddComponent<Tick>();
-            Lc.Line("plugin loaded v1.0.0 args=" + string.Join(" ", Environment.GetCommandLineArgs()));
+            Lc.Line("plugin loaded v1.0.1 args=" + string.Join(" ", Environment.GetCommandLineArgs()));
         }
     }
 

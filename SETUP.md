@@ -45,7 +45,7 @@ and their twins one after the other (for example `batch_r10e.ps1`); the test fla
 ```
 powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 ```
-Needs the BepInEx zip from step 2 (in `work\downloads\`) and a built plugin. Output: `work\release\DrgSurvivorLocalCoop-1.0.0-Installer.zip`. GitHub cannot build this for
+Needs the BepInEx zip from step 2 (in `work\downloads\`) and a built plugin. Output: `work\release\DrgSurvivorLocalCoop-1.0.1-Installer.zip`. GitHub cannot build this for
 you (the plugin needs your game's generated assemblies), so a release is built on a PC with the game and uploaded by hand (`gh release create`).
 
 ## Where to start reading

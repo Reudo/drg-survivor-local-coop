@@ -4,7 +4,7 @@ Two dwarves in one game, on one PC, with two controllers. A BepInEx 6 (IL2CPP) p
 the second dwarf is a second player object inside the same game process. Playing online with a friend works through Steam Remote Play Together
 (see "Online" below).
 
-**Version 1.0.0. Status: playable.** Supported mission types: **Elimination** and **Escort**. Full runs (stages, shop, end screen, retry) have been
+**Version 1.0.1. Status: playable.** Supported mission types: **Elimination** and **Escort**. Full runs (stages, shop, end screen, retry) have been
 played by hand with two controllers. Other mission types are not offered by the co-op menu and are not tested. Known gaps are listed at the end.
 It replaces the stopped online prototype [drg-survivor-coop](https://github.com/Reudo/drg-survivor-coop).
 
@@ -55,7 +55,7 @@ Taken by the test harness from the real game (the game's own texts are English h
 
 ## Install
 
-Play with the installer package `DrgSurvivorLocalCoop-1.0.0-Installer.zip` (it is the release file, not stored in the repo; built with `tools/build-installer.ps1`). It contains the plugin, the installer scripts and a copy of BepInEx for PCs that have none. Extract the ZIP completely and double-click
+Play with the installer package `DrgSurvivorLocalCoop-1.0.1-Installer.zip` (it is the release file, not stored in the repo; built with `tools/build-installer.ps1`). It contains the plugin, the installer scripts and a copy of BepInEx for PCs that have none. Extract the ZIP completely and double-click
 `Install-LocalCoop.bat`. It finds the Steam folder, backs up your save, installs BepInEx only if there is none, copies the plugin, and creates the
 shortcut "DRG Survivor Co-op". BepInEx is switched off for normal starts, so single player stays the unchanged game. `installer/README.txt`
 (English) and `installer/LIES-MICH.txt` (German) have the details; `Uninstall-LocalCoop.bat` removes everything again.
@@ -72,7 +72,7 @@ the game in co-op mode; then you invite your friend from Spacewar. Player 2 is t
 The invite works and a full run was played this way; the guest's pad on every single screen is not tested systematically.
 
 ## Known gaps
-- The end-screen weapon overview does not list player 2's damage, and the damage numbers on the end screen are probably not accurate.
+- End screen: both dwarves' weapons are listed. The "damage overview" and its total are the game's team total and come out about 20 to 27 percent higher than the two weapon tables added up (damage that no weapon is credited for); not checked whether the single-player game does the same.
 - DLCs are not supported at the moment, and the game was not tested with DLCs active.
 - Drones: both dwarves share one drone by default; a second drone for player 2 is an experiment. Turrets of player 2 deal damage (hand-tested).
 - Only Elimination and Escort; other mission types are not offered.
