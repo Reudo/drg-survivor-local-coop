@@ -10,10 +10,6 @@ on:
         description: GitHub release tag whose *-Nexus.zip is uploaded
         required: true
         default: v1.0.2
-      changelog:
-        description: Changelog line for Nexus
-        required: false
-        default: Revive no longer lets enemies hit the other dwarf from afar; subclasses unlock for player 2's class; end screen artifact icons fixed.
       archive_old:
         description: Archive the previous version on Nexus
         required: true
@@ -43,7 +39,8 @@ jobs:
         with:
           api_key: ${{ secrets.NEXUS_API_KEY }}
           file_id: '8226018'
-          mod_id: '26'
+          # no changelog: the v3 API answered "Mod not found: 26" for /mods/26/changelogs (run 40489750307, 2026-10-27; the version itself was created);
+          # the v3 mod id is not the number in the page URL. Write the changelog on the mod page.
           filename: ${{ env.ZIP }}
           version: ${{ env.VERSION }}
           display_name: DRG Survivor Local Co-op ${{ env.VERSION }}
@@ -51,7 +48,6 @@ jobs:
           category: main
           archive_existing_version: ${{ inputs.archive_old }}
           update_mod_version: 'true'
-          changelog: ${{ inputs.changelog }}
 
       - name: Result
         run: echo "Nexus version id ${{ steps.nexus.outputs.version_id }}"
