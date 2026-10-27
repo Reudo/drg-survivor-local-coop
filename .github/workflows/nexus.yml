@@ -1,0 +1,57 @@
+# Uploads the DLL-only ZIP of a GitHub release as a new version of the mod's main file on Nexus Mods
+# (https://www.nexusmods.com/deeprockgalacticsurvivor/mods/26, file 8226018). Started by hand only (Actions -> Nexus upload -> Run workflow).
+# The API key comes from the repository secret NEXUS_API_KEY. The mod page text is not changed by this; edit it on Nexus.
+name: Nexus upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: GitHub release tag whose *-Nexus.zip is uploaded
+        required: true
+        default: v1.0.2
+      changelog:
+        description: Changelog line for Nexus
+        required: false
+        default: Revive no longer lets enemies hit the other dwarf from afar; subclasses unlock for player 2's class; end screen artifact icons fixed.
+      archive_old:
+        description: Archive the previous version on Nexus
+        required: true
+        default: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the Nexus ZIP from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*-Nexus.zip'
+          ls -l *-Nexus.zip
+          echo "ZIP=$(ls *-Nexus.zip | head -n1)" >> "$GITHUB_ENV"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Upload to Nexus Mods
+        id: nexus
+        # Nexus-Mods/upload-action v1.0.0-beta.11 (2026-09-10), pinned by commit
+        uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2
+        with:
+          api_key: ${{ secrets.NEXUS_API_KEY }}
+          file_id: '8226018'
+          mod_id: '26'
+          filename: ${{ env.ZIP }}
+          version: ${{ env.VERSION }}
+          display_name: DRG Survivor Local Co-op ${{ env.VERSION }}
+          description: Plugin DLL only (BepInEx\plugins\LocalCoop.dll). Requires BepInEx 6.0.0-be.789 (Unity IL2CPP, win-x64).
+          category: main
+          archive_existing_version: ${{ inputs.archive_old }}
+          update_mod_version: 'true'
+          changelog: ${{ inputs.changelog }}
+
+      - name: Result
+        run: echo "Nexus version id ${{ steps.nexus.outputs.version_id }}"
